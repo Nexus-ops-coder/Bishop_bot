@@ -76,6 +76,39 @@ async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # ─────────────────────────────────────────
+# 🤖 AI MODULE (Groq)
+# ─────────────────────────────────────────
+
+async def ai_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text(
+            "Usage: /ai <your message>\nExample: /ai What is anime?"
+        )
+        return
+    user_message = " ".join(context.args)
+    msg = await update.message.reply_text("🤖 Thinking...")
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        await msg.edit_text("❌ AI service not configured.")
+        return
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "llama3-8b-8192",
+                "messages": [{"role": "user", "content": user_message}],
+                "max_tokens": 500
+            }
+        ) as resp:
+            data = await resp.json()
+            reply = data["choices"][0]["message"]["content"]
+            await msg.edit_text(f"🤖 *AI:*\n{reply}", parse_mode="Markdown")
+
+# ─────────────────────────────────────────
 # 🎌 ANIME MODULE
 # ─────────────────────────────────────────
 
@@ -210,8 +243,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [
             [InlineKeyboardButton("👤 User Tools", callback_data="cat_user"),
              InlineKeyboardButton("🎌 Anime", callback_data="cat_anime")],
-            [InlineKeyboardButton("👮 Admin Tools", callback_data="cat_admin"),
+            [InlineKeyboardButton("🤖 AI Chat", callback_data="cat_ai"),
              InlineKeyboardButton("👑 Premium", callback_data="premium")],
+            [InlineKeyboardButton("👮 Admin Tools", callback_data="cat_admin")],
             [InlineKeyboardButton("🔙 Back", callback_data="start")],
         ]
         await query.edit_message_text(
@@ -224,7 +258,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = [
             [InlineKeyboardButton("👤 User Tools", callback_data="cat_user"),
              InlineKeyboardButton("🎌 Anime", callback_data="cat_anime")],
-            [InlineKeyboardButton("👮 Admin Tools", callback_data="cat_admin")],
+            [InlineKeyboardButton("🤖 AI Chat", callback_data="cat_ai"),
+             InlineKeyboardButton("👮 Admin Tools", callback_data="cat_admin")],
             [InlineKeyboardButton("🔙 Back", callback_data="start")],
         ]
         await query.edit_message_text(
@@ -250,6 +285,16 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "/anime <name> — Search anime\n"
             "/top — Top 10 anime list\n"
             "/waifu — Random anime image",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(back_button)
+        )
+
+    elif data == "cat_ai":
+        await query.edit_message_text(
+            "🤖 *AI Chat*\n\n"
+            "/ai <message> — Chat with AI\n\n"
+            "Example: `/ai What is the meaning of life?`\n\n"
+            "Powered by Groq x Llama 3 ⚡",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(back_button)
         )
@@ -322,7 +367,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "👨‍💻 Developer: @your\\_username\n"
             "📅 Created: 2026\n\n"
             "Bishop\\_bot is a powerful all-in-one Telegram bot "
-            "with anime search, admin tools, and more!",
+            "with anime search, admin tools, AI chat and more!",
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
@@ -334,13 +379,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 app = ApplicationBuilder().token(os.environ["BOT_TOKEN"]).build()
 
 app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("menu", menu if False else start))
-app.add_handler(CommandHandler("help", lambda u, c: u.message.reply_text("Use /start to access help menu!")))
+app.add_handler(CommandHandler("help", start))
+app.add_handler(CommandHandler("menu", start))
 app.add_handler(CommandHandler("ping", ping))
 app.add_handler(CommandHandler("prefix", prefix))
 app.add_handler(CommandHandler("id", myid))
 app.add_handler(CommandHandler("myuid", myid))
 app.add_handler(CommandHandler("info", info))
+app.add_handler(CommandHandler("ai", ai_chat))
 app.add_handler(CommandHandler("anime", anime))
 app.add_handler(CommandHandler("top", top_anime))
 app.add_handler(CommandHandler("waifu", waifu))
