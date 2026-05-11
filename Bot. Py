@@ -7,7 +7,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("How can I help you?")
 
-app = ApplicationBuilder().token("8703022948:AAERnx2nP4NbSYYPrKW2mTX1o8wSkSxF1-k").build()
+app = ApplicationBuilder().token("8703022948:AAHBaMjIzfs12Wp73MUFVX6euqnsTv8Bk5Q").build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("help", help_command))
 app.run_polling()
