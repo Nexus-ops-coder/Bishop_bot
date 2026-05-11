@@ -5,6 +5,7 @@ from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler,
     filters, ContextTypes
 )
+from keep_alive import keep_alive
 
 # ─────────────────────────────────────────
 # 🔧 UTILITIES
