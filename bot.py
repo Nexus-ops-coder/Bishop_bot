@@ -1,58 +1,68 @@
 import os
+import time
 import aiohttp
-from telegram import Update, ChatPermissions
+from telegram import Update, ChatPermissions, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler,
-    filters, ContextTypes
+    ApplicationBuilder, CommandHandler, CallbackQueryHandler,
+    ContextTypes
 )
-from keep_alive import keep_alive
 
 # ─────────────────────────────────────────
-# 🔧 UTILITIES
+# 🚀 START
 # ─────────────────────────────────────────
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.message.from_user
+    keyboard = [
+        [InlineKeyboardButton("📋 Menu", callback_data="menu"),
+         InlineKeyboardButton("❓ Help", callback_data="help")],
+        [InlineKeyboardButton("⚙️ Settings", callback_data="settings"),
+         InlineKeyboardButton("👑 Premium", callback_data="premium")],
+        [InlineKeyboardButton("📡 Ping", callback_data="ping"),
+         InlineKeyboardButton("ℹ️ About", callback_data="about")],
+    ]
     await update.message.reply_text(
-        "👋 Hello! I'm Bishop_bot\n\n"
-        "📌 Commands:\n"
-        "/help — Show all commands\n"
-        "/id — Get your Telegram ID\n"
-        "/info — Your profile info\n"
-        "/ping — Check if bot is online\n"
-        "/anime <name> — Search anime\n"
-        "/top — Top 10 anime\n"
-        "/ban — Ban a user (admin)\n"
-        "/kick — Kick a user (admin)\n"
-        "/warn — Warn a user (admin)\n"
-        "/mute — Mute a user (admin)\n"
+        f"👋 Welcome, *{user.first_name}*!\n\n"
+        f"🤖 I'm *Bishop\\_bot* — your all-in-one Telegram assistant.\n\n"
+        f"Use the buttons below to get started 👇",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ─────────────────────────────────────────
+# 📡 PING
+# ─────────────────────────────────────────
+
+async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    start_time = time.time()
+    msg = await update.message.reply_text("📡 Pinging...")
+    end_time = time.time()
+    ms = round((end_time - start_time) * 1000)
+    await msg.edit_text(f"✅ *Pong!*\n⚡ Response time: `{ms}ms`", parse_mode="Markdown")
+
+# ─────────────────────────────────────────
+# 🔤 PREFIX
+# ─────────────────────────────────────────
+
+async def prefix(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🛠 *All Commands:*\n\n"
-        "👤 *User Tools*\n"
-        "/id — Your Telegram UID\n"
-        "/info — Your profile info\n"
-        "/ping — Bot status\n\n"
-        "🎌 *Anime*\n"
-        "/anime <name> — Search anime\n"
-        "/top — Top 10 anime list\n\n"
-        "👮 *Admin Tools*\n"
-        "/ban — Ban a user\n"
-        "/kick — Kick a user\n"
-        "/warn — Warn a user\n"
-        "/mute — Mute a user\n\n"
-        "⏳ *Coming Soon*\n"
-        "Free Fire stats, TikTok downloader, AI image gen",
+        "🔤 *Prefix Settings*\n\n"
+        "Current prefix: `/`\n\n"
+        "All commands start with `/`\n"
+        "Example: `/ping`, `/anime Naruto`",
         parse_mode="Markdown"
     )
 
-async def ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🟢 Bot is online and running!")
+# ─────────────────────────────────────────
+# 👤 USER TOOLS
+# ─────────────────────────────────────────
 
 async def myid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
-    await update.message.reply_text(f"🆔 Your Telegram ID: `{user.id}`", parse_mode="Markdown")
+    await update.message.reply_text(
+        f"🆔 Your Telegram ID: `{user.id}`",
+        parse_mode="Markdown"
+    )
 
 async def info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
@@ -101,6 +111,17 @@ async def top_anime(update: Update, context: ContextTypes.DEFAULT_TYPE):
             for i, a in enumerate(data["data"], 1):
                 text += f"{i}. {a['title']} ⭐{a.get('score', 'N/A')}\n"
             await update.message.reply_text(text, parse_mode="Markdown")
+
+async def waifu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🎨 Fetching anime image...")
+    async with aiohttp.ClientSession() as session:
+        async with session.get("https://api.waifu.pics/sfw/waifu") as resp:
+            data = await resp.json()
+            image_url = data["url"]
+            await update.message.reply_photo(
+                photo=image_url,
+                caption="🌸 Here's your anime image!\nUse /waifu again for another one."
+            )
 
 # ─────────────────────────────────────────
 # 👮 ADMIN MODULE
@@ -160,24 +181,173 @@ async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"🔇 {user.full_name} has been muted!")
 
 # ─────────────────────────────────────────
+# 🔘 BUTTON HANDLER
+# ─────────────────────────────────────────
+
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+
+    back_button = [[InlineKeyboardButton("🔙 Back", callback_data="start")]]
+
+    if data == "start":
+        keyboard = [
+            [InlineKeyboardButton("📋 Menu", callback_data="menu"),
+             InlineKeyboardButton("❓ Help", callback_data="help")],
+            [InlineKeyboardButton("⚙️ Settings", callback_data="settings"),
+             InlineKeyboardButton("👑 Premium", callback_data="premium")],
+            [InlineKeyboardButton("📡 Ping", callback_data="ping"),
+             InlineKeyboardButton("ℹ️ About", callback_data="about")],
+        ]
+        await query.edit_message_text(
+            "👋 Welcome back!\n\n🤖 I'm *Bishop\\_bot* — your all-in-one assistant.\n\nUse the buttons below 👇",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+    elif data == "menu":
+        keyboard = [
+            [InlineKeyboardButton("👤 User Tools", callback_data="cat_user"),
+             InlineKeyboardButton("🎌 Anime", callback_data="cat_anime")],
+            [InlineKeyboardButton("👮 Admin Tools", callback_data="cat_admin"),
+             InlineKeyboardButton("👑 Premium", callback_data="premium")],
+            [InlineKeyboardButton("🔙 Back", callback_data="start")],
+        ]
+        await query.edit_message_text(
+            "📋 *Main Menu*\n\nChoose a category below 👇",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+    elif data == "help":
+        keyboard = [
+            [InlineKeyboardButton("👤 User Tools", callback_data="cat_user"),
+             InlineKeyboardButton("🎌 Anime", callback_data="cat_anime")],
+            [InlineKeyboardButton("👮 Admin Tools", callback_data="cat_admin")],
+            [InlineKeyboardButton("🔙 Back", callback_data="start")],
+        ]
+        await query.edit_message_text(
+            "❓ *Help Center*\n\nSelect a category to see commands 👇",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+    elif data == "cat_user":
+        await query.edit_message_text(
+            "👤 *User Tools*\n\n"
+            "/id — Your Telegram UID\n"
+            "/info — Your profile info\n"
+            "/ping — Bot response time\n"
+            "/prefix — Command prefix info",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(back_button)
+        )
+
+    elif data == "cat_anime":
+        await query.edit_message_text(
+            "🎌 *Anime Commands*\n\n"
+            "/anime <name> — Search anime\n"
+            "/top — Top 10 anime list\n"
+            "/waifu — Random anime image",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(back_button)
+        )
+
+    elif data == "cat_admin":
+        await query.edit_message_text(
+            "👮 *Admin Tools*\n\n"
+            "/ban — Ban a user\n"
+            "/kick — Kick a user\n"
+            "/warn — Warn a user\n"
+            "/mute — Mute a user\n\n"
+            "⚠️ Reply to a user's message to use these commands.",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(back_button)
+        )
+
+    elif data == "settings":
+        keyboard = [
+            [InlineKeyboardButton("🔔 Notifications: ON", callback_data="notif_toggle")],
+            [InlineKeyboardButton("🌐 Language: English", callback_data="lang_toggle")],
+            [InlineKeyboardButton("🔙 Back", callback_data="start")],
+        ]
+        await query.edit_message_text(
+            "⚙️ *Settings*\n\nCustomize your experience 👇",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+    elif data == "notif_toggle":
+        await query.answer("🔔 Notifications feature coming soon!", show_alert=True)
+
+    elif data == "lang_toggle":
+        await query.answer("🌐 Language settings coming soon!", show_alert=True)
+
+    elif data == "premium":
+        keyboard = [
+            [InlineKeyboardButton("💎 Get Premium", callback_data="get_premium")],
+            [InlineKeyboardButton("🔙 Back", callback_data="start")],
+        ]
+        await query.edit_message_text(
+            "👑 *Premium Features*\n\n"
+            "✅ Unlimited AI Chat\n"
+            "✅ Free Fire Stats\n"
+            "✅ TikTok Downloader\n"
+            "✅ AI Image Generator\n"
+            "✅ Priority Support\n\n"
+            "🚀 *Coming Soon!*",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+    elif data == "get_premium":
+        await query.answer("👑 Premium coming soon! Stay tuned.", show_alert=True)
+
+    elif data == "ping":
+        await query.edit_message_text(
+            "✅ *Pong!*\n⚡ Bot is online and responding!",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(back_button)
+        )
+
+    elif data == "about":
+        keyboard = [
+            [InlineKeyboardButton("👨‍💻 Developer", url="https://t.me/your_username")],
+            [InlineKeyboardButton("🔙 Back", callback_data="start")],
+        ]
+        await query.edit_message_text(
+            "ℹ️ *About Bishop\\_bot*\n\n"
+            "🤖 Version: 1.0.0\n"
+            "👨‍💻 Developer: @your\\_username\n"
+            "📅 Created: 2026\n\n"
+            "Bishop\\_bot is a powerful all-in-one Telegram bot "
+            "with anime search, admin tools, and more!",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+
+# ─────────────────────────────────────────
 # 🚀 MAIN
 # ─────────────────────────────────────────
 
 app = ApplicationBuilder().token(os.environ["BOT_TOKEN"]).build()
 
 app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("help", help_command))
+app.add_handler(CommandHandler("menu", menu if False else start))
+app.add_handler(CommandHandler("help", lambda u, c: u.message.reply_text("Use /start to access help menu!")))
 app.add_handler(CommandHandler("ping", ping))
+app.add_handler(CommandHandler("prefix", prefix))
 app.add_handler(CommandHandler("id", myid))
 app.add_handler(CommandHandler("myuid", myid))
 app.add_handler(CommandHandler("info", info))
 app.add_handler(CommandHandler("anime", anime))
 app.add_handler(CommandHandler("top", top_anime))
+app.add_handler(CommandHandler("waifu", waifu))
 app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("kick", kick))
 app.add_handler(CommandHandler("warn", warn))
 app.add_handler(CommandHandler("mute", mute))
-keep_alive()
+app.add_handler(CallbackQueryHandler(button_handler))
 
-app.run_polling()
 app.run_polling()
