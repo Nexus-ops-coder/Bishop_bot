@@ -177,5 +177,7 @@ app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("kick", kick))
 app.add_handler(CommandHandler("warn", warn))
 app.add_handler(CommandHandler("mute", mute))
+keep_alive()
 
+app.run_polling()
 app.run_polling()
