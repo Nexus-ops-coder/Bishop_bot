@@ -358,13 +358,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data == "about":
         keyboard = [
-            [InlineKeyboardButton("👨‍💻 Developer", url="https://t.me/your_username")],
+            [InlineKeyboardButton("👨‍💻 Developer", url="https://t.me/Bishop_fxx")],
             [InlineKeyboardButton("🔙 Back", callback_data="start")],
         ]
         await query.edit_message_text(
             "ℹ️ *About Bishop\\_bot*\n\n"
             "🤖 Version: 1.0.0\n"
-            "👨‍💻 Developer: @your\\_username\n"
+            "👨‍💻 Developer: @Bishop_fxx\n"
             "📅 Created: 2026\n\n"
             "Bishop\\_bot is a powerful all-in-one Telegram bot "
             "with anime search, admin tools, AI chat and more!",
